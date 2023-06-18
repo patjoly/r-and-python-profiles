@@ -1,0 +1,91 @@
+Notes for .Rprofile and .pystartup files
+
+
+TODO:
+	rename this repo r-and-python-profiles
+
+
+Rprofile
+	See this post to add a new function that allows assigning to a list of variables on a single line
+		https://stackoverflow.com/questions/7519790/assign-multiple-new-variables-on-lhs-in-a-single-line
+
+	Saving history - minor issue (SOLVED I think, see addition to bashrc below)
+		There is a minor issue which we may want to fix: if we start R when a directory that is not ~/ and no .Rhistory file exists in that directory, then R will not read in any history file because it does not find any. When we quit R, at the .Last function will save the history of the current session in ~/.Rhistory (as we would expect but it will clobber the file because it did not read from it in the first place, so the history will only be the commands from the current session.
+
+		We should think of a fix. Perhaps with a .First function? Whereby if no history file is found in the current directory it reads from ~/.Rhistory
+
+		Perhaps another solution is just to add to bashrc
+			export R_HISTFILE=$HOME/.Rhistory
+
+			Let's try it:
+
+			cd /tmp
+			cat $HOME/.Rhistory
+			R_HISTFILE=$HOME/.Rhistory R
+				library(forcats)
+				q()
+
+		Let's add this to bashrc for now and see if we are comfortable with that over time. Probably simpler than creating a .First function
+
+
+pystartup
+	Just discovered we can have a startup file, looks like it could be useful for many things.
+
+	2023 06 16 - added the following to bashrc
+		export PYTHONSTARTUP=$HOME/.pystartup
+
+	Resources:
+		TODO: put "official" or most worthy resources here
+
+	Links of ideas of how to set up .pystartup (haven't read most of them yet)
+		It would be nice to have a way, like for R, to save history in the current folder where python is started (interactively)
+
+		There is a suggestion using ~/.pystartup
+		https://stackoverflow.com/questions/947810/how-to-save-a-python-interactive-session
+		https://realpython.com/effective-python-environment/
+		https://github.com/daneah/dotfiles/blob/master/source/pystartup
+		https://stackoverflow.com/questions/19534230/a-pythonstartup-file-for-a-specific-directory
+		http://www.witkowskibartosz.com/blog/pythonstartup_what_it_is_and_how_to_use_it.html
+
+	Saving history in current working directory
+		My first purpose was to save history in current working directory.
+
+		Note that history gets saved when we start an interactive session by just calling python. When we run a script in the debugger, the history does not get saved (neither from the script nor from the commands we may enter manuall.
+
+		With my first cut at this 2023 06 17, here is what it does. I am not aiming for perfection at this stage, for now, I just want to be able to use a bunch of history files in various cookbook sub-folders, in project folders, in /tmp folders:
+
+			If in a folder where python is started:
+
+			1) there is no history file:
+				. it read from ~/.python_history
+					- easy to delete all the history at the top if I don't want it
+				. saves to ./.pyhistory
+					- is that what we want if there is not ~/.pyhistory file in the first place? Give it some though. One way would be to save there only if we have defined a .pyhistory file in the first place which is easy to do with touch ./.pyhistory
+					good
+				. saves to ~/.python_history as well
+					- we should fix that, it should only save history to => implications: that's ok, easy to delete all the history at the top if I don't want it
+
+			2) a ./.pyhistory file exists -- i.e. we created on with touch ./.pyhistory
+				touch ./.pyhistory
+				python
+					same as 1)
+
+				echo '# history file for the current directory' >> ./.pyhistory
+				python
+					. reads from and saves to ./.pyhistory
+					. does not save to ~/.python_history
+
+				Great.
+
+
+			So for the time being, let's just beta test our .startup file as it is now for a few weeks and see if it works well, then we can adjust if needed. We just need:
+				. to be mindful of the situation at 1) and create a non-empty .pyhistory file when we want history to be read and saved there only
+
+			Other Q is: what if we don't want to save history in the current folder?
+				Perhaps the behaviour we want is: if we didn't explicitely create a non-empty .pyhistory file in the current directory, python would not create one and just read and write from ~/.python_history. Wouldn't that be simple and easy enough?
+
+				In the .Rprofile, it doesn't create any new history file (other than ~/.Rhistory which almost always already exists), it only reads and writes from a .Rhistory in the current folder if it exists already, which I think is the prefered way -- it easy to understand and to create one manually if we want a folder/project specific history file.
+
+	Useful methods:
+		If we ever need to there is a method to expand the tilde, e.g.
+			fname = os.path.expanduser("~/.pyhistory")

@@ -1,1 +1,2 @@
-cp Rprofile ~/.Rprofile
+cp Rprofile  ~/.Rprofile
+cp pystartup ~/.pystartup
