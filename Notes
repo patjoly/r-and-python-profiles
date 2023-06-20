@@ -151,7 +151,7 @@ pystartup
 
 			If an empty .pyhistory file was created by the user (e.g. touch .pyhistory) in order to begin saving history in that directory, we needed to add at least a line at the top when first reading it otherwise python will read from ~/.python_history if readline.get_current_history_length() is 0 (I think, that's what I figure from trial and error).
 
-			We could then remove that line just before writing to the history file, should be very easy to do (see pydoc readline).
+			In save_history(), we then remove that line just before saving. Note that the argument to get_history_item() is 'index' (1-based) whereas the argument readline.remove_history_item() is 'pos' (zero-indexed), see pydoc readline.
 
 
 	Testing that it loads and saves to the proper history files
