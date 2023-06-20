@@ -8,12 +8,18 @@ pwd = os.getenv('PWD')
 historyPath = os.path.join( pwd, ".pyhistory")
 
 def save_history(historyPath=historyPath):
+    import os
     import readline
-    readline.write_history_file(historyPath)
+    if os.path.exists(historyPath):
+        readline.write_history_file(historyPath)
 
-# otherwise reads from usual ~/.python_history file
+# if the file does not exist, python reads from ~/.python_history file
 if os.path.exists(historyPath):
     readline.read_history_file(historyPath)
+
+    # if the file exists but is empty, need to put something in it otherwise python will read from ~/.python_history file
+    if os.path.getsize(historyPath)==0:
+        readline.add_history('# initialised new history file')
 
 atexit.register(save_history)
 del os, atexit, readline, rlcompleter, save_history, historyPath

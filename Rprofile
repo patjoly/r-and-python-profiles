@@ -6,9 +6,23 @@ q <- function (save="no", ...) {
   quit(save=save, ...)
 }
 
-# .First <- function(){
-#  nothing for now
-#}
+.First <- function(){
+  if(interactive()){
+
+    hist_file = ''
+    initial_wd_hist_file = file.path( .initial_wd, '.Rhistory' )
+
+    if ( file.exists( initial_wd_hist_file ) ) {
+      hist_file <- initial_wd_hist_file
+    } else {
+      hist_file <- Sys.getenv( 'R_HISTFILE' )
+      if ( hist_file=='' ) hist_file <- "~/.Rhistory"
+    }
+
+    cat( "\nReading history from:\n\t", hist_file, "\n\n" )
+    utils::loadhistory(hist_file)
+  }
+}
 
 .initial_wd <- getwd()
 
@@ -17,18 +31,14 @@ q <- function (save="no", ...) {
 
     hist_file = ''
     initial_wd_hist_file = file.path( .initial_wd, '.Rhistory' )
-    # if R finds a history file there, that's the one that will 
-    # have been loaded and that we want to save to
 
-    if (file.exists( initial_wd_hist_file )) {
+    if ( file.exists( initial_wd_hist_file ) ) {
       hist_file <- initial_wd_hist_file
     } else {
-      hist_file <- Sys.getenv("R_HISTFILE")
+      hist_file <- Sys.getenv( 'R_HISTFILE' )
+      if ( hist_file=='' ) hist_file <- "~/.Rhistory"
     }
 
-    if(hist_file=="") {           # if it's still not defined, then in ~
-      hist_file <- "~/.Rhistory"
-    }
     savehistory(hist_file)
   }
 }

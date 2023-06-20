@@ -2,40 +2,132 @@ Notes for .Rprofile and .pystartup files
 
 
 TODO:
-	rename this repo r-and-python-profiles
+	Should set R_HISTSIZE in bashrc and set it to a large value, the default is 512 I think, something like that. (Wonder if we can it to -1 to have it be infinie?)
 
 
 Rprofile
-	See this post to add a new function that allows assigning to a list of variables on a single line
+	Resources:
+		Manual:
+			fullrefman.pdf: Startup: Initialization of an R Session
+				describes what happens a start up, good read
+
+			R-intro.pdf: Appendix B: Invoking R
+				describes option --no-restore-history
+
+			R-intro.pdf: Appendix C: the command-line editor (TODO: move to devbash)
+				has a section near the end on examples to customize readline key bindings
+
+		help( history )
+		help( savehistory )
+			Load or Save or Display the Commands History
+
+			"The (‘readline’ on Unix-alikes) history mechanism is controlled by two environment variables: ‘R_HISTSIZE’ controls the number of lines that are saved (default 512), and ‘R_HISTFILE’ (default ‘.Rhistory’) sets the filename used for the loading/saving of history if requested at the beginning/end of a session (but not the default for ‘loadhistory’/‘savehistory’).  There is no limit on the number of lines of history retained during a session, so setting ‘R_HISTSIZE’ to a large value has no penalty unless a large file is actually generated."
+
+		help( interactive )
+			Is R Running Intereractively?
+
+		help( quit )
+			Terminate an R Session
+
+
+	Environment variables -- relevant ones:
+		R_HISTFILE
+		R_HISTSIZE
+
+
+	Enhancements -- potential:
 		https://stackoverflow.com/questions/7519790/assign-multiple-new-variables-on-lhs-in-a-single-line
+			ideas on ways to add a new function that allows assigning to a list of variables on a single line
 
-	Saving history - minor issue (SOLVED I think, see addition to bashrc below)
-		There is a minor issue which we may want to fix: if we start R when a directory that is not ~/ and no .Rhistory file exists in that directory, then R will not read in any history file because it does not find any. When we quit R, at the .Last function will save the history of the current session in ~/.Rhistory (as we would expect but it will clobber the file because it did not read from it in the first place, so the history will only be the commands from the current session.
 
-		We should think of a fix. Perhaps with a .First function? Whereby if no history file is found in the current directory it reads from ~/.Rhistory
+	.First function
+		Just created the .First function (2023 06), based on the lines from .Last. Should re-factor these lines if they remain nearly identical with a function, but only after enough beta testing i.e a few months.
 
-		Perhaps another solution is just to add to bashrc
-			export R_HISTFILE=$HOME/.Rhistory
+		If this function ever cause issues, we could always deleted it, it is not essential.
 
-			Let's try it:
+		R pretty much does what is in .First by default, but it made sense to have similar logic in both .First and .Last and make it explicit. Also, it looks like R otherwise reads R_HISTFILE first if it is defined, even if there is .Rhistory file in the current working directory.
 
-			cd /tmp
-			cat $HOME/.Rhistory
-			R_HISTFILE=$HOME/.Rhistory R
-				library(forcats)
+
+	Testing that it loads and saves to the proper history files
+		1a) a directory with an existing history file
+			project_path=
+			cd $project_path
+			R
+				cat("this line should be appended to the end of the current directory's history file and not clobber it\n")
 				q()
 
-		Let's add this to bashrc for now and see if we are comfortable with that over time. Probably simpler than creating a .First function
+			cat ./.Rhistory
+				should see the line added above
+			cat $R_HISTFILE
+				should be unchanged
+
+		1b) nearly identical to 1a) but with directory with an existing but empty .Rhistory file
+			mkdir /tmp/test1b
+			cd !$
+			touch .Rhistory
+			R
+				cat("this line should be first line at the top, followed by q() and nothing else\n")
+				q()
+
+			cat ./.Rhistory
+			cat $R_HISTFILE
+				should be unchanged
+
+		2) a new project or directory w/o a history file
+			mkdir /tmp/test2
+			cd !$
+			R
+				cat("this line should be appended to and not clobber $R_HISTFILE\n")
+				q()
+
+			cat ./.Rhistory
+				should get error: No such file or directory
+			cat $R_HISTFILE
+				should see the line above appended at the bottom along with the previous history above
+
+		3) R_HISTFILE not defined (should write to ./.Rhistory then)
+			mkdir /tmp/test3
+			cd !$
+			R_HISTFILE= R
+			# env -u R_HISTFILE R (I think we can also call it that way if the above does not work)
+				cat("this line should be appended to and not clobber .Rhistory\n")
+				q()
+
+			cat ./.Rhistory
+				should get error: No such file or directory
+			cat $R_HISTFILE
+				should see the line above appended at the bottom along with the previous history above
+
+		4) R_HISTFILE set to a different value than ~/.Rhistory (and from a folder w/o a .Rhistory file)
+			mkdir /tmp/test4
+			cd !$
+			R_HISTFILE=$HOME/delete_this_file R
+				cat("this line should be the sole line in delete_this_file\n")
+				q()
+
+			cat $HOME/delete_this_file
+			cat $R_HISTFILE
+				should be unchanged
+
+
+	Saving history - minor issue (SOLVED I think)
+		There is a minor issue which we may want to fix: if we start R from a directory that is not ~/ and no .Rhistory file exists in that directory, then R will not read in any history file because it does not find any. When we quit R, at the .Last function will save the history of the current session in ~/.Rhistory (as we would expect but it will clobber the file because it did not read from it in the first place, so the history will only be the commands from the current session.
+
+		This is actually fixed in at least one way and potentially two: the .First function (added 2023 06), now reads the ~/.Rhistory file if no history file is found in the current directory and R_HISTFILE is not set. The addition of R_HISTFILE to bashrc also fixes that.
 
 
 pystartup
 	Just discovered we can have a startup file, looks like it could be useful for many things.
 
+
 	2023 06 16 - added the following to bashrc
 		export PYTHONSTARTUP=$HOME/.pystartup
 
+
 	Resources:
 		TODO: put "official" or most worthy resources here
+		pydoc readline
+
 
 	Links of ideas of how to set up .pystartup (haven't read most of them yet)
 		It would be nice to have a way, like for R, to save history in the current folder where python is started (interactively)
@@ -47,44 +139,59 @@ pystartup
 		https://stackoverflow.com/questions/19534230/a-pythonstartup-file-for-a-specific-directory
 		http://www.witkowskibartosz.com/blog/pythonstartup_what_it_is_and_how_to_use_it.html
 
+
 	Saving history in current working directory
 		My first purpose was to save history in current working directory.
 
 		Note that history gets saved when we start an interactive session by just calling python. When we run a script in the debugger, the history does not get saved (neither from the script nor from the commands we may enter manuall.
 
-		With my first cut at this 2023 06 17, here is what it does. I am not aiming for perfection at this stage, for now, I just want to be able to use a bunch of history files in various cookbook sub-folders, in project folders, in /tmp folders:
+		Little kludge with the following block
+			if os.path.getsize(historyPath)==0:
+				readline.add_history('# initialised new history file')
 
-			If in a folder where python is started:
+			If an empty .pyhistory file was created by the user (e.g. touch .pyhistory) in order to begin saving history in that directory, we needed to add at least a line at the top when first reading it otherwise python will read from ~/.python_history if readline.get_current_history_length() is 0 (I think, that's what I figure from trial and error).
 
-			1) there is no history file:
-				. it read from ~/.python_history
-					- easy to delete all the history at the top if I don't want it
-				. saves to ./.pyhistory
-					- is that what we want if there is not ~/.pyhistory file in the first place? Give it some though. One way would be to save there only if we have defined a .pyhistory file in the first place which is easy to do with touch ./.pyhistory
-					good
-				. saves to ~/.python_history as well
-					- we should fix that, it should only save history to => implications: that's ok, easy to delete all the history at the top if I don't want it
-
-			2) a ./.pyhistory file exists -- i.e. we created on with touch ./.pyhistory
-				touch ./.pyhistory
-				python
-					same as 1)
-
-				echo '# history file for the current directory' >> ./.pyhistory
-				python
-					. reads from and saves to ./.pyhistory
-					. does not save to ~/.python_history
-
-				Great.
+			We could then remove that line just before writing to the history file, should be very easy to do (see pydoc readline).
 
 
-			So for the time being, let's just beta test our .startup file as it is now for a few weeks and see if it works well, then we can adjust if needed. We just need:
-				. to be mindful of the situation at 1) and create a non-empty .pyhistory file when we want history to be read and saved there only
+	Testing that it loads and saves to the proper history files
+		1) a directory with an existing history file
+			project_path=
+			cd $project_path
+			python
+				print("this line should be appended to the end of the current directory's history file and not clobber it")
+				quit()
 
-			Other Q is: what if we don't want to save history in the current folder?
-				Perhaps the behaviour we want is: if we didn't explicitely create a non-empty .pyhistory file in the current directory, python would not create one and just read and write from ~/.python_history. Wouldn't that be simple and easy enough?
+			cat ./.pyhistory
+				should see the line added above
+			cat ~/.python_history
+				should be unchanged
 
-				In the .Rprofile, it doesn't create any new history file (other than ~/.Rhistory which almost always already exists), it only reads and writes from a .Rhistory in the current folder if it exists already, which I think is the prefered way -- it easy to understand and to create one manually if we want a folder/project specific history file.
+		1b) nearly identical to 1a) but with directory with an existing but empty .pyhistory file
+			mkdir /tmp/test1b
+			cd !$
+			touch .pyhistory
+			python
+				print("this line should be first line at the top, followed by quit() and nothing else")
+				quit()
+
+			cat ./.pyhistory
+				should see the line added above
+			cat ~/.python_history
+				should be unchanged
+
+		2) a new project or directory w/o a history file
+			mkdir /tmp/test2
+			cd !$
+			python
+				print("this line should be appended to and not clobber ~/.python_history")
+				quit()
+
+			cat ./.pyhistory
+				should get error: No such file or directory
+			cat ~/.python_history
+				should see the line above appended at the bottom along with the previous history above
+
 
 	Useful methods:
 		If we ever need to there is a method to expand the tilde, e.g.
