@@ -129,6 +129,24 @@ pystartup
 		pydoc readline
 
 
+	Caveats
+		With my file associations, I start python with the -i option which does not read PYTHONSTARTUP, see
+			man python
+		under the -i option
+
+		If I want certain modules to be loaded or variables to be set, I have to set them in each associated command.
+
+
+	Pandas and Copy-on-write
+		https://pandas.pydata.org/docs/user_guide/copy_on_write.html
+
+		Copy-on-write is expected to be the default in pandas 3.0, set it now as I don't want to have to edit each script with that explicit option, only to remove it from all scripts again when pandas 3.0 comes out. Not only will it be the default but it looks like there won't be an option at all to replicate the old behaviour, which is why might as well adapt to it now.
+
+		Actually, I still need to add the option to scripts as they are called as scripts so PYTHONSTARTUP does not get called -- and also to be on the safe side and ensure the option is set.
+
+		Will remove the option when pandas 3.0 is released but I may leave the import statement there though if I find it useful, I am working with pandas 95% of the time.
+
+
 	Links of ideas of how to set up .pystartup (haven't read most of them yet)
 		It would be nice to have a way, like for R, to save history in the current folder where python is started (interactively)
 

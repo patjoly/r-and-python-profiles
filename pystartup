@@ -29,3 +29,7 @@ if os.path.exists(historyPath):
 
 atexit.register(save_history)
 del os, atexit, readline, rlcompleter, save_history, historyPath
+
+# Copy-on-write is expected to be the default in pandas 3.0, set it now
+import pandas as pd
+pd.set_option( 'mode.copy_on_write', True )
