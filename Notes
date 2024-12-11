@@ -2,7 +2,7 @@ Notes for .Rprofile and .pystartup files
 
 
 TODO:
-	Should set R_HISTSIZE in bashrc and set it to a large value, the default is 512 I think, something like that. (Wonder if we can it to -1 to have it be infinie?)
+	Should set R_HISTSIZE in bashrc and set it to a large value, the default is 512 I think, something like that. (Wonder if we can it to -1 to have it be infinite?)
 
 
 Rprofile
@@ -24,7 +24,7 @@ Rprofile
 			"The (‘readline’ on Unix-alikes) history mechanism is controlled by two environment variables: ‘R_HISTSIZE’ controls the number of lines that are saved (default 512), and ‘R_HISTFILE’ (default ‘.Rhistory’) sets the filename used for the loading/saving of history if requested at the beginning/end of a session (but not the default for ‘loadhistory’/‘savehistory’).  There is no limit on the number of lines of history retained during a session, so setting ‘R_HISTSIZE’ to a large value has no penalty unless a large file is actually generated."
 
 		help( interactive )
-			Is R Running Intereractively?
+			Is R Running Interactively?
 
 		help( quit )
 			Terminate an R Session
@@ -117,24 +117,169 @@ Rprofile
 
 
 pystartup
-	Just discovered we can have a startup file, looks like it could be useful for many things.
+	Sticky
+		. with my file associations, I start python with the -i option which does not read PYTHONSTARTUP, see
+				man python
+			under the -i option
+
+			If I want certain modules to be loaded or variables to be set -- e.g. pd.set_option()-- I have to set them in each associated command.
+
+	Resources
+		https://docs.python.org/3/library/readline.html
+		pydoc readline
+
+
+	Testing and Debugging .pystartup
+		We can't really test .pystartup in the debugger (pdb module doesn't read the history) but we we can add print statements such as
+			print( 'do we get to this line in .pystartup?' )
+			print( f'historyPath variable is: {historyPath}' )
+		also we may want to comment out this line if we want to have access to these functions, variables after .pystartup is done
+			# del os, atexit, readline, rlcompleter, save_history, historyPath
+
+		other useful print statements that can be added
+			curr_hist_len = readline.get_current_history_length()
+			print( f'history length is {curr_hist_len}' )
+
+		can compare with version 3.12 behaviour by calling python as follows, in a folder that has a .pyhistory file e.g.
+			cd ~/Data/Hockey/LHJMQ/2022/
+			/usr/local/python/3.12.0/bin/python3.12
+				print('manually printed this line after I called version 12 explicitly, version 3.13 is now my local version')
+			cat .pyhistory
+
+
+		Testing file association -- not really a pystartup matter but it's related to PYTHON_HISTORY -- so relevant to document here
+			Commands in file associations that I tested and work (2024 11 05):
+				e ~/.local/share/applications/python-5.desktop
+
+				Exec=PYTHON_HISTORY=$( [ -f ".python_history" ] &&  echo "$(pwd)/.python_history" || echo "$HOME/.python_history" ) /usr/local/bin/python -i -c 'import sys; import pandas as pd; import numpy as np; from pandas_myutils.utils import order, idx_toggle_multi, idx_propagate_levels, convert_to_integer; pd.set_option( "display.min_rows", 30 ); name = str(sys.argv[1] ); df = pd.read_csv(name, dtype_backend="pyarrow")'
+
+				Very easy to just tweak these lines to test behaviour, no need to do anything in System Settings > File Associations.
+
+				In Dolphin, going to /home/pat/Data/Src/Hockey/NHL/2024-2025/Py/02/, clicked on a .csv.gz file
+
+				I can use the arrows to see the previous commands and
+					print('manually printed this line using version 3.13 python with PYTHON_HISTORY in File Associations')
+
+				cd ~/Data/Src/Hockey/NHL/2024-2025/Py/02/
+				cat .python_history
+
+
+		Testing PYTHON_HISTORY environment variable -- with pystartup versions from 2024 12 and newer
+			cd ~/Dev/r-and-python-profiles/test/
+			tree -a test/
+				test/
+				├── .pyhist
+				├── .pyhistory
+				└── .python_history
+
+			PYTHON_HISTORY=$( [ -f ".python_history" ] &&  echo "$(pwd)/.python_history" || echo "$HOME/.python_history" ) /usr/local/bin/python
+				print('added one more line by typing this in the version 3.13 REPL')
+
+			PYTHON_HISTORY=$( [ -f ".pyhist" ] &&  echo "$(pwd)/.pyhist" || echo "$HOME/.python_history" ) /usr/local/bin/python
+				print('added one more line by typing this in the version 3.13 REPL')
+
+			PYTHON_HISTORY=$( [ -f ".pyhistory" ] &&  echo "$(pwd)/.pyhistory" || echo "$HOME/.python_history" ) /usr/local/bin/python
+				this one is kind of moot since I already tested it with an alternate name just above, but since I have that file
+				print('added one more line by typing this in the version 3.13 REPL')
+
+			PYTHON_HISTORY=$( [ -f ".pyhist2" ] &&  echo "$(pwd)/.pyhist2" || echo "$HOME/.python_history" ) /usr/local/bin/python
+				this does load the file from my home folder since pyhist2 doesn't exist
+
+			Can also use PYTHON_BASIC_REPL=1 with PYTHON_HISTORY:
+
+			PYTHON_BASIC_REPL=1 PYTHON_HISTORY=$( [ -f ".python_history" ] &&  echo "$(pwd)/.python_history" || echo "$HOME/.python_history" ) /usr/local/bin/python
+				Python 3.13.0 (main, Nov  2 2024, 11:59:38) [GCC 14.2.0] on linux
+				Type "help", "copyright", "credits" or "license" for more information.
+				running ~/.pystartup
+				using history file: /home/pat/Dev/r-and-python-profiles/test/.python_history
+
+				(ins)>>> print('added one more line by typing this in the version 3.13 REPL with PYTHON_BASIC_REPL=1')
+					added one more line by typing this in the version 3.13 REPL with PYTHON_BASIC_REPL=1
+				(ins)>>> quit()
+
+			Calling python from the test folder with neither environment variable:
+				python
+					Python 3.13.0 (main, Nov  2 2024, 11:59:38) [GCC 14.2.0] on linux
+					Type "help", "copyright", "credits" or "license" for more information.
+					running ~/.pystartup
+					using history file: /home/pat/Dev/r-and-python-profiles/test/.python_history
+
+				and navigating with the arrows I get to see this
+					>>> # This the .python_history file in the test/ directory
+
+				It works.
+
+
+	2024 update - Python version 3.13
+		Sticky:
+			. long story short is that readline stopped working in pystartup as it was working in version 12, not sure why... but the addition of this new PYTHON_HISTORY environment variable rendered the use of readline obsolete. Hence what prompted the fall 2024 change to pystartup.
+
+		Version 3.13 introduced a new REPL. While it looks great, key bindings from inputrc don't work. It also seems like the readline functionality doesn't work as it did before -- perhaps a scoping issue, really don't know but the history file does not get updated.
+
+		Version 3.13 also introduced 2 new environment variables: PYTHON_HISTORY (I think it's new) and PYTHON_BASIC_REPL. Adding PYTHON_BASIC_REPL=1 in front of the python command starts python in version 3.13 with the basic REPL.
+
+		Below we experiment with the new variables to see if/how we should modify pystartup.
+
+		Calling python from the terminal with PYTHON_HISTORY -- as I added it with file association
+			Note: this is testing pystartup as of commit id 0819acc38666ecabed0714bb5b20252b7ad5d79a -- i.e. the older version prior to the fall 2024 changes
+
+			cd ~/Dev/r-and-python-profiles/test/
+			PYTHON_HISTORY=$( [ -f ".python_history" ] &&  echo "$(pwd)/.python_history" || echo "$HOME/.python_history" ) /usr/local/bin/python
+
+			Using the up/down arrows, I cannot see the previous command.
+
+			print('manually printed this line using version 3.13 python with PYTHON_HISTORY directly from the command line')
+					quit()
+
+			cat .python_history
+			cat .pyhistory
+
+			I don't see the line that I printed.
+
+			The difference from the File Associations call is that it runs .pystartup since I don't use the -c option.
+
+			Now looking at the folder, the timestamps shows that it saved to the .pyhistory file (this further confirms that .pystartup is run and finds the file properly, saves it on exit).
+
+			So it looks like readline finds and opens the history file, but for some reason doesn't update the registry of commands, perhaps it's a context thing.
+
+			>>> readline.get_current_history_length()
+				6
+			>>> readline.get_history_item(6)
+				"print('this is the .pyhistory file')"
+
+			So the history file is loaded, I just can't access it with the arrows and anything I do doesn't get saved when the file is saved.
+
+			Perhaps if I try to use the examples in the readline documentation it would work. See Footnote F1 for the examples I tried, to no avail.
+
+
+		Testing PYTHON_HISTORY variable with File Associations
+			The file association file in
+				:e ~/.local/share/applications/python-5.desktop
+			has
+				Exec=PYTHON_BASIC_REPL=1 PYTHON_HISTORY=$( [ -f ".python_history" ] &&  echo "$(pwd)/.python_history" || echo "$HOME/.python_history" ) /usr/local/bin/python -i -c 'import sys; import pandas as pd; import numpy as np; from pandas_myutils.utils import order, idx_toggle_multi, idx_propagate_levels, convert_to_integer; pd.set_option( "display.min_rows", 30 ); name = str(sys.argv[1] ); df = pd.read_csv(name, dtype_backend="pyarrow")'
+
+			cd ~/Data/Src/Hockey/NHL/2024-2025/Py/02/
+				opened a .csv.gz file from this directory where I have a .python_history file
+
+			print('manually printed this line using version 3.13 python with PYTHON_HISTORY in File Associations and PYTHON_BASIC_REPL=1')
+
+			It works, I can see all relevant history lines, key bindings work, and the history file gets saved properly.
 
 
 	2023 06 16 - added the following to bashrc
 		export PYTHONSTARTUP=$HOME/.pystartup
 
 
-	Resources:
-		TODO: put "official" or most worthy resources here
-		pydoc readline
+	Questions:
+		Can we get a history file to be read in the debugger?
+			https://stackoverflow.com/questions/10346419/save-command-history-in-pdb
 
+			not sure I really have a use for saving/reading history in the debugger, I am usually just stepping through code in the debugger, but could be useful.
 
-	Caveats
-		With my file associations, I start python with the -i option which does not read PYTHONSTARTUP, see
-			man python
-		under the -i option
+		Why did I name my history files .pyhistory instead of .python_history?
+			was it so they stand out as files I would have created? But they would be so just from the fact that they are in a different folder than my home directory.
 
-		If I want certain modules to be loaded or variables to be set, I have to set them in each associated command.
+			I should revert the filename to be .python_history everywhere. Or perhaps it's so I could have a shorter name that takes less space in vim tabs (I could even shorten it as .pyhist)
 
 
 	Pandas and Copy-on-write
@@ -158,10 +303,10 @@ pystartup
 		http://www.witkowskibartosz.com/blog/pythonstartup_what_it_is_and_how_to_use_it.html
 
 
-	Saving history in current working directory
-		My first purpose was to save history in current working directory.
+	Saving history in current working directory -- this section now obsolete since we are no longer using readline (fall 2024)
+		My first purpose for having a pystartup file was to save history in current working directory.
 
-		Note that history gets saved when we start an interactive session by just calling python. When we run a script in the debugger, the history does not get saved (neither from the script nor from the commands we may enter manuall.
+		Note that history gets saved when we start an interactive session by just calling python. When we run a script in the debugger, the history does not get saved (neither from the script nor from the commands we may enter manually.
 
 		Little kludge with the following block
 			if os.path.getsize(historyPath)==0:
@@ -172,45 +317,27 @@ pystartup
 			In save_history(), we then remove that line just before saving. Note that the argument to get_history_item() is 'index' (1-based) whereas the argument readline.remove_history_item() is 'pos' (zero-indexed), see pydoc readline.
 
 
-	Testing that it loads and saves to the proper history files
-		1) a directory with an existing history file
-			project_path=
-			cd $project_path
-			python
-				print("this line should be appended to the end of the current directory's history file and not clobber it")
-				quit()
 
-			cat ./.pyhistory
-				should see the line added above
-			cat ~/.python_history
-				should be unchanged
+Footnote F1 -- Examples from the readline documentation -- 2024 11
+	When version 3.13 was released, I tried this example taken verbatim from https://docs.python.org/3/library/readline.html. I only changed the histfile as per the file chosen above. It didn't work and that perhaps because I need to read up on the code module.
 
-		1b) nearly identical to 1a) but with directory with an existing but empty .pyhistory file
-			mkdir /tmp/test1b
-			cd !$
-			touch .pyhistory
-			python
-				print("this line should be first line at the top, followed by quit() and nothing else")
-				quit()
+	import code
 
-			cat ./.pyhistory
-				should see the line added above
-			cat ~/.python_history
-				should be unchanged
+	class HistoryConsole(code.InteractiveConsole):
+		def __init__(self, locals=None, filename="<console>", histfile=histfile):
+			code.InteractiveConsole.__init__(self, locals, filename)
+			self.init_history(histfile)
 
-		2) a new project or directory w/o a history file
-			mkdir /tmp/test2
-			cd !$
-			python
-				print("this line should be appended to and not clobber ~/.python_history")
-				quit()
+		def init_history(self, histfile):
+			readline.parse_and_bind("tab: complete")
+			if hasattr(readline, "read_history_file"):
+				try:
+					readline.read_history_file(histfile)
+				except FileNotFoundError:
+					pass
+				atexit.register(self.save_history, histfile)
 
-			cat ./.pyhistory
-				should get error: No such file or directory
-			cat ~/.python_history
-				should see the line above appended at the bottom along with the previous history above
+		def save_history(self, histfile):
+			readline.set_history_length(1000)
+			readline.write_history_file(histfile)
 
-
-	Useful methods:
-		If we ever need to there is a method to expand the tilde, e.g.
-			fname = os.path.expanduser("~/.pyhistory")

@@ -1,35 +1,27 @@
-import atexit
 import os
-import readline
-import rlcompleter
+
+print('running ~/.pystartup')
 
 pwd = os.getenv('PWD')
+histfile_env     = os.getenv('PYTHON_HISTORY')              # names are in order of priority
+histfile_pwd     = os.path.join( pwd, ".python_history")
+histfile_pwd_alt = os.path.join( pwd, ".pyhist")
+histfile_home    = os.path.expanduser("~/.python_history")
 
-historyPath = os.path.join( pwd, ".pyhistory")
+if histfile_env is not None and os.path.exists(histfile_env):
+    histfile = histfile_env
+else:
+    if os.path.exists(histfile_pwd):
+        histfile = histfile_pwd
+    elif os.path.exists(histfile_pwd_alt):
+        histfile = histfile_pwd_alt
+    else:
+        histfile = histfile_home
+    os.environ['PYTHON_HISTORY'] = histfile
 
-def save_history(historyPath=historyPath):
-    import os
-    import readline
-
-    first_line = readline.get_history_item(1)
-    if first_line == '# initialised new history file':
-        readline.remove_history_item(0)
-
-    if os.path.exists(historyPath):
-        readline.write_history_file(historyPath)
-
-
-# if the file does not exist, python reads from ~/.python_history file
-if os.path.exists(historyPath):
-    readline.read_history_file(historyPath)
-
-    # if the file exists but is empty, need to put something in it otherwise python will read from ~/.python_history file
-    if os.path.getsize(historyPath)==0:
-        readline.add_history('# initialised new history file')
-
-atexit.register(save_history)
-del os, atexit, readline, rlcompleter, save_history, historyPath
+print(f'using history file: {histfile}')
 
 # Copy-on-write is expected to be the default in pandas 3.0, set it now
 import pandas as pd
 pd.set_option( 'mode.copy_on_write', True )
+pd.set_option( 'display.min_rows', 30 )
