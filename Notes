@@ -25,9 +25,31 @@ Rprofile
 
 		help( interactive )
 			Is R Running Interactively?
-
 		help( quit )
 			Terminate an R Session
+		help( Startup )
+			Initialization at Start of an R Session
+		help( .libPaths )
+			Search Paths for Packages
+
+	Packages to load at startup while suppressing warnings
+		I followed the approach proposed at the following link and just changed the names of the functions and variables involved to my liking. I also removed theseobjects at the end of the file since I would not need them beyond startup.
+
+		https://www.r-bloggers.com/2014/09/fun-with-rprofile-and-customizing-r-startup/
+
+
+	.libPaths() -- at_work branch created in 2025 06
+		At work, I need to specify where to install packages so that they get saved in a location where I have the required permissions. I do this with a call to .libPaths() -- only at work, no change required at home. After the profile runs successfully, here is the output of .libPaths():
+			at home:
+				.libPaths()
+					[1] "/usr/local/R/4.4.1/lib/R/library"
+
+			at work:
+				.libPaths()
+					[1] "C:/Program Files/R/R-ESDC/my_modules"
+					[2] "C:/Program Files/R/R-ESDC/library"
+
+		I had previously and manually created the my_modules folder. If I don't add that folder with .libPaths(), the packages get installed in OneDrive and I run into errors when trying to update them.
 
 
 	Environment variables -- relevant ones:

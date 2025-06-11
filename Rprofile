@@ -1,5 +1,5 @@
 local({r <- getOption("repos")
-      r["CRAN"] <- "https://mirror.csclub.uwaterloo.ca/CRAN/"
+      r['CRAN'] <- 'https://mirror.csclub.uwaterloo.ca/CRAN/'
       options(repos=r)})
 
 q <- function (save="no", ...) {
@@ -43,7 +43,17 @@ q <- function (save="no", ...) {
   }
 }
 
-auto.loads <-c("dplyr", "ggplot2")
+# packages to load at startup
+
+no_warning_at_start <- function( a_package ){
+  suppressWarnings( suppressPackageStartupMessages(
+    library( a_package, character.only=TRUE )) )
+}
+load_at_start <- c("dplyr", "ggplot2")
+
+if (interactive()) {
+  invisible( sapply( load_at_start, no_warning_at_start ) )
+}
 
 attach(
   list(
@@ -61,5 +71,7 @@ attach(
 #   df[id] <- lapply(df[id], as.character)
 #   df
 # }
+
+rm( list = ls(pattern = '_at_start$') )
 
 message("Successfully loaded .Rprofile")
