@@ -49,7 +49,7 @@ no_warning_at_start <- function( a_package ){
   suppressWarnings( suppressPackageStartupMessages(
     library( a_package, character.only=TRUE )) )
 }
-load_at_start <- c("dplyr", "ggplot2")
+load_at_start <- c('dplyr', 'readr', 'ggplot2')
 
 if (interactive()) {
   invisible( sapply( load_at_start, no_warning_at_start ) )
